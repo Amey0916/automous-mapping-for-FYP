@@ -405,31 +405,9 @@ void ControllerServer::computeControl()
 
       updateGlobalPath();
 
-      computeAndPublishVelocity(false);
+      // Always publish velocity using the single configured controller.
+      computeAndPublishVelocity(true);
 
-      //使用teb的路径作为 RegulatedPurePursuitController 的路径输入
-      try{
-        geometry_msgs::msg::PoseStamped goal_pose = current_path_.poses.back();
-
-        if(teb_path_.poses.empty()) {
-          loop_rate.sleep();
-          continue;
-        }
-
-        teb_path_.poses.push_back(goal_pose);
-
-        controllers_[controller_ids_[1]]->setPlan(teb_path_);
-
-        teb_path_.poses.clear();
-
-        computeAndPublishVelocity(true);
-      }
-      catch(...){
-        RCLCPP_ERROR(get_logger(), "Set Teb Path Error!");
-        loop_rate.sleep();
-        continue;
-      }
-      
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
         break;
@@ -498,7 +476,6 @@ void ControllerServer::computeAndPublishVelocity(bool pub_cmd_vel)
   try {
 
     std::string controller_temp = current_controller_;
-    if(pub_cmd_vel) controller_temp = controller_ids_[1];
 
     cmd_vel_2d =
       controllers_[controller_temp]->computeVelocityCommands(
