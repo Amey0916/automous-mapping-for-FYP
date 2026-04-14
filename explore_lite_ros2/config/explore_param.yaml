@@ -1,0 +1,17 @@
+explore_lite_node:
+  ros__parameters:
+    global_frame: map
+    robot_base_frame: base_link
+    planner_frequency: 0.5        # 规划频率（适配仿真响应速度）
+    progress_timeout: 180.0       # 进度超时（仿真小车移动慢，放宽）
+    visualize: true               # 可视化前沿（RViz可看）
+    potential_scale: 1e-3         # 前沿代价权重
+    gain_scale: 1.0               # 距离增益权重
+    min_frontier_size: 0.1        # 最小前沿尺寸（TB3车身小，降低）
+    max_frontier_distance: 5.0   # 最大前沿搜索距离
+    costmap_topic: /global_costmap/costmap_raw  # TB3仿真的costmap话题
+    costmap_updates_topic: /global_costmap/costmap_updates
+    transform_tolerance: 1.0      # TF变换容忍度
+    action_server_name: /navigate_to_pose  # Nav2动作服务名
+    map_topic: /map
+    use_sim_time: true            # 仿真必须启用
