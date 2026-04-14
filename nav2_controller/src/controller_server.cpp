@@ -405,31 +405,8 @@ void ControllerServer::computeControl()
 
       updateGlobalPath();
 
-      computeAndPublishVelocity(false);
+      computeAndPublishVelocity();
 
-      //使用teb的路径作为 RegulatedPurePursuitController 的路径输入
-      try{
-        geometry_msgs::msg::PoseStamped goal_pose = current_path_.poses.back();
-
-        if(teb_path_.poses.empty()) {
-          loop_rate.sleep();
-          continue;
-        }
-
-        teb_path_.poses.push_back(goal_pose);
-
-        controllers_[controller_ids_[1]]->setPlan(teb_path_);
-
-        teb_path_.poses.clear();
-
-        computeAndPublishVelocity(true);
-      }
-      catch(...){
-        RCLCPP_ERROR(get_logger(), "Set Teb Path Error!");
-        loop_rate.sleep();
-        continue;
-      }
-      
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
         break;
@@ -477,7 +454,7 @@ void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
   current_path_ = path;
 }
 
-void ControllerServer::computeAndPublishVelocity(bool pub_cmd_vel)
+void ControllerServer::computeAndPublishVelocity()
 {
   geometry_msgs::msg::PoseStamped pose;
 
@@ -497,11 +474,13 @@ void ControllerServer::computeAndPublishVelocity(bool pub_cmd_vel)
 
   try {
 
-    std::string controller_temp = current_controller_;
-    if(pub_cmd_vel) controller_temp = controller_ids_[1];
+    if (controllers_.find(current_controller_) == controllers_.end()) {
+      throw nav2_core::PlannerException(
+        "Controller '" + current_controller_ + "' not found in configured controllers.");
+    }
 
     cmd_vel_2d =
-      controllers_[controller_temp]->computeVelocityCommands(
+      controllers_[current_controller_]->computeVelocityCommands(
       pose,
       nav_2d_utils::twist2Dto3D(twist),
       goal_checkers_[current_goal_checker_].get());
@@ -552,7 +531,6 @@ void ControllerServer::computeAndPublishVelocity(bool pub_cmd_vel)
   action_server_->publish_feedback(feedback);
 
   RCLCPP_DEBUG(get_logger(), "Publishing velocity at time %.2f", now().seconds());
-  if(pub_cmd_vel){
 
 #if CAR_TYPE == 2
     //FW车型轮子归零
@@ -565,8 +543,7 @@ void ControllerServer::computeAndPublishVelocity(bool pub_cmd_vel)
     }
 #endif
 
-    publishVelocity(cmd_vel_2d);
-  }
+  publishVelocity(cmd_vel_2d);
 }
 
 void ControllerServer::updateGlobalPath()

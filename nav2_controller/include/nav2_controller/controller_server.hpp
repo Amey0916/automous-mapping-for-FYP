@@ -157,7 +157,7 @@ protected:
   /**
    * @brief Calculates velocity and publishes to "cmd_vel" topic
    */
-  void computeAndPublishVelocity(bool pub_cmd_vel);
+  void computeAndPublishVelocity();
   /**
    * @brief Calls setPlannerPath method with an updated path received from
    * action server
