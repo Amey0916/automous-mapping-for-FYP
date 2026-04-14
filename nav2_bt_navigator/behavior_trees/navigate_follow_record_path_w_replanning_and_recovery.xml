@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<root main_tree_to_execute="MainTree">
+    <!-- ////////// -->
+    <BehaviorTree ID="MainTree">
+        <Control ID="RecoveryNode" name="NavigateRecovery" number_of_retries="6">
+            <Control ID="PipelineSequence" name="NavigateWithReplanning">
+                <Decorator ID="RateController" hz="5.0">
+                    <Control ID="RecoveryNode" name="FollowPath" number_of_retries="1">
+                        <Action ID="FollowPath" controller_id="Teb_local_planner" goal_checker_id = "general_goal_checker" path="{path}"/>
+                        <Action ID="ClearEntireCostmap" name="ClearLocalCostmap-Context" server_timeout="" service_name="local_costmap/clear_entirely_local_costmap"/>
+                    </Control>
+                </Decorator>
+            </Control>
+            <ReactiveFallback name="RecoveryFallback">
+                <Condition ID="GoalUpdated"/>
+                <Control ID="RoundRobin" name="RecoveryActions">
+                    <Sequence name="ClearingActions">
+                        <Action ID="ClearEntireCostmap" name="ClearLocalCostmap-Subtree" server_timeout="" service_name="local_costmap/clear_entirely_local_costmap"/>
+                        <Action ID="ClearEntireCostmap" name="ClearGlobalCostmap-Subtree" server_timeout="" service_name="global_costmap/clear_entirely_global_costmap"/>
+                    </Sequence>
+                    <Action ID="Spin" spin_dist="1.57" time_allowance=""/>
+                    <Action ID="Wait" wait_duration="5"/>
+                    <Action ID="BackUp" backup_dist="0.30" backup_speed="0.05" time_allowance=""/>
+                </Control>
+            </ReactiveFallback>
+        </Control>
+    </BehaviorTree>
+</root>
