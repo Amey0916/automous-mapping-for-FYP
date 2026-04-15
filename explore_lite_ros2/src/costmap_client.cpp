@@ -25,10 +25,11 @@ static const std::array<unsigned char, 256> kCostTranslationTable =
 Costmap2DClient::Costmap2DClient(rclcpp::Node& node,
                                  const std::shared_ptr<tf2_ros::Buffer>& tf_buffer,
                                  const CostmapClientOptions& options)
-  : tf_buffer_(tf_buffer),
+  : node_(node),
+    tf_buffer_(tf_buffer),
     robot_base_frame_(options.robot_base_frame),
     transform_tolerance_(options.transform_tolerance),
-    node_(node)  // 新增：保存节点引用用于日志
+    costmap_is_nav2_(options.costmap_is_nav2)
 {
   costmap_sub_ = node.create_subscription<nav_msgs::msg::OccupancyGrid>(
       options.costmap_topic, rclcpp::QoS(1).transient_local(),
@@ -44,6 +45,9 @@ Costmap2DClient::Costmap2DClient(rclcpp::Node& node,
 
   RCLCPP_INFO(node.get_logger(), "Costmap2DClient subscribed to %s and %s",
               options.costmap_topic.c_str(), options.costmap_updates_topic.c_str());
+  RCLCPP_INFO(node.get_logger(), "costmap_is_nav2=%s: OccupancyGrid->costmap translation %s",
+              costmap_is_nav2_ ? "true" : "false",
+              costmap_is_nav2_ ? "DISABLED (raw Nav2 costmap values)" : "ENABLED (applying translation table)");
 }
 
 void Costmap2DClient::updateFullMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
@@ -67,7 +71,7 @@ void Costmap2DClient::updateFullMap(const nav_msgs::msg::OccupancyGrid::SharedPt
 
   for (size_t i = 0; i < costmap_size && i < msg->data.size(); ++i) {
     unsigned char cell_cost = static_cast<unsigned char>(msg->data[i]);
-    costmap_data[i] = kCostTranslationTable[cell_cost];
+    costmap_data[i] = costmap_is_nav2_ ? cell_cost : kCostTranslationTable[cell_cost];
   }
 
   // 新增：打印地图尺寸日志
@@ -112,7 +116,7 @@ void Costmap2DClient::updatePartialMap(const map_msgs::msg::OccupancyGridUpdate:
     for (size_t x = x0; x < xn && x < costmap_xn; ++x) {
       size_t idx = costmap_.getIndex(x, y);
       unsigned char cell_cost = static_cast<unsigned char>(msg->data[i]);
-      costmap_data[idx] = kCostTranslationTable[cell_cost];
+      costmap_data[idx] = costmap_is_nav2_ ? cell_cost : kCostTranslationTable[cell_cost];
       ++i;
     }
   }

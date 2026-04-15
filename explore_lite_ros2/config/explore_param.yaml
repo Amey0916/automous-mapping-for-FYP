@@ -11,6 +11,7 @@ explore_lite_node:
     max_frontier_distance: 5.0   # 最大前沿搜索距离
     costmap_topic: /global_costmap/costmap_raw  # TB3仿真的costmap话题
     costmap_updates_topic: /global_costmap/costmap_updates
+    costmap_is_nav2: true                       # true: raw Nav2 costmap values (skip translation); false: OccupancyGrid (-1/0..100) translation
     transform_tolerance: 1.0      # TF变换容忍度
     action_server_name: /navigate_to_pose  # Nav2动作服务名
     map_topic: /map

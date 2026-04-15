@@ -16,6 +16,7 @@ struct CostmapClientOptions
   std::string costmap_updates_topic;
   std::string robot_base_frame;
   double transform_tolerance;
+  bool costmap_is_nav2{true};
 };
 
 class Costmap2DClient
@@ -43,6 +44,7 @@ private:
   std::string global_frame_;
   std::string robot_base_frame_;
   double transform_tolerance_;
+  bool costmap_is_nav2_;
   bool has_map_{false};
 };
 }  // namespace explore_lite
