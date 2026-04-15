@@ -49,6 +49,7 @@ private:
   double max_frontier_distance_{5.0};
   std::string action_server_name_{"navigate_to_pose"};
   double blacklist_timeout_{10.0}; // 10秒自动过期
+  double min_goal_distance_{0.8};
 
   // TF
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;

@@ -34,6 +34,7 @@ ExploreNode::ExploreNode() : Node("explore_lite_node"), prev_distance_{0.0}
   this->declare_parameter("transform_tolerance", 0.3);
   this->declare_parameter("action_server_name", "navigate_to_pose");
   this->declare_parameter("blacklist_timeout", 10.0);
+  this->declare_parameter("min_goal_distance", 0.8);
 
   this->get_parameter("planner_frequency", planner_frequency_);
   this->get_parameter("progress_timeout", progress_timeout_);
@@ -44,6 +45,7 @@ ExploreNode::ExploreNode() : Node("explore_lite_node"), prev_distance_{0.0}
   this->get_parameter("max_frontier_distance", max_frontier_distance_);
   this->get_parameter("action_server_name", action_server_name_);
   this->get_parameter("blacklist_timeout", blacklist_timeout_);
+  this->get_parameter("min_goal_distance", min_goal_distance_);
 
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -113,20 +115,43 @@ void ExploreNode::makePlan()
               double d2 = hypot(b.centroid.x - robot_pose.position.x, b.centroid.y - robot_pose.position.y);
               return d1 < d2;
             });
-  Frontier best = valid_frontiers[0];
+
+  // Filter out frontiers that are too close to the robot
+  const Frontier* selected = nullptr;
+  for (const auto& f : valid_frontiers) {
+    double dist = hypot(f.centroid.x - robot_pose.position.x,
+                        f.centroid.y - robot_pose.position.y);
+    if (dist < min_goal_distance_) {
+      RCLCPP_INFO(this->get_logger(),
+                  "Skipping frontier (%.2f, %.2f): distance %.2f < min_goal_distance %.2f",
+                  f.centroid.x, f.centroid.y, dist, min_goal_distance_);
+      continue;
+    }
+    selected = &f;
+    break;
+  }
+
+  if (!selected) {
+    RCLCPP_WARN(this->get_logger(),
+                "All %zu frontiers are closer than min_goal_distance (%.2f m), waiting for next cycle",
+                valid_frontiers.size(), min_goal_distance_);
+    return;
+  }
 
   NavigateToPoseAction::Goal goal_msg;
   goal_msg.pose.header.frame_id = "map";
   goal_msg.pose.header.stamp = this->now();
-  goal_msg.pose.pose.position = best.centroid;
+  goal_msg.pose.pose.position = selected->centroid;
   goal_msg.pose.pose.orientation = robot_pose.orientation;
+
+  prev_goal_ = selected->centroid;
 
   auto opt = rclcpp_action::Client<NavigateToPoseAction>::SendGoalOptions();
   opt.result_callback = std::bind(&ExploreNode::reachedGoal, this, std::placeholders::_1);
   nav_client_->async_send_goal(goal_msg, opt);
 
   if (visualize_) visualizeFrontiers(frontiers);
-  RCLCPP_INFO(this->get_logger(), "Send goal: %.2f %.2f", best.centroid.x, best.centroid.y);
+  RCLCPP_INFO(this->get_logger(), "Send goal: %.2f %.2f", selected->centroid.x, selected->centroid.y);
 }
 
 void ExploreNode::reachedGoal(const ClientGoalHandle::WrappedResult& result)
