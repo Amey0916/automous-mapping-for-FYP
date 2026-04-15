@@ -35,6 +35,7 @@ ExploreNode::ExploreNode() : Node("explore_lite_node"), prev_distance_{0.0}
   this->declare_parameter("action_server_name", "navigate_to_pose");
   this->declare_parameter("blacklist_timeout", 10.0);
   this->declare_parameter("min_goal_distance", 0.8);
+  this->declare_parameter("costmap_is_nav2", true);
 
   this->get_parameter("planner_frequency", planner_frequency_);
   this->get_parameter("progress_timeout", progress_timeout_);
@@ -55,6 +56,7 @@ ExploreNode::ExploreNode() : Node("explore_lite_node"), prev_distance_{0.0}
   options.costmap_updates_topic = this->get_parameter("costmap_updates_topic").as_string();
   options.robot_base_frame = this->get_parameter("robot_base_frame").as_string();
   options.transform_tolerance = this->get_parameter("transform_tolerance").as_double();
+  options.costmap_is_nav2 = this->get_parameter("costmap_is_nav2").as_bool();
   costmap_client_ = std::make_unique<Costmap2DClient>(*this, tf_buffer_, options);
 
   search_ = FrontierSearch(
