@@ -144,27 +144,51 @@ controller_server:
     # ✅ 正确的控制器：DWB 本地规划器（能跑、不报错、兼容探索）
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
-      debug_trajectory_details: True
+      debug_trajectory_details: true
+
+      # Velocity limits
       min_vel_x: 0.0
-      max_vel_x: 0.22       # 小车前进速度
-      max_vel_theta: 1.0
-      min_speed_xy: 0.05
-      acc_lim_x: 0.25
-      acc_lim_theta: 0.5
-      decel_lim_x: -0.5
-      decel_lim_theta: -0.5
-      sim_time: 1.5
-      transform_tolerance: 0.3
+      max_vel_x: 0.22
+      min_vel_y: 0.0
+      max_vel_y: 0.0
+      max_vel_theta: 2.75
+      min_speed_xy: 0.0
+      max_speed_xy: 0.22
+      min_speed_theta: 0.0
+
+      # Accel limits
+      acc_lim_x: 2.5
+      acc_lim_y: 0.0
+      acc_lim_theta: 3.2
+      decel_lim_x: -2.5
+      decel_lim_y: 0.0
+      decel_lim_theta: -3.2
+
+      # Sampling / simulation
+      vx_samples: 20
+      vy_samples: 1
+      vtheta_samples: 40
+      sim_time: 1.7
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      transform_tolerance: 0.2
+
+      # Goal tolerances (DWB 内部也会用到)
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
-      stateful: True
+      trans_stopped_velocity: 0.25
+      short_circuit_trajectory_evaluation: true
+      stateful: true
+
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      BaseObstacle.scale: 0.05
-      PathAlign.scale: 30.0
-      GoalAlign.scale: 20.0
-      PathDist.scale: 30.0
-      GoalDist.scale: 20.0
-      RotateToGoal.scale: 16.0
+      BaseObstacle.scale: 0.02
+      PathAlign.scale: 32.0
+      GoalAlign.scale: 24.0
+      PathDist.scale: 32.0
+      GoalDist.scale: 24.0
+      RotateToGoal.scale: 32.0
+      RotateToGoal.slowing_factor: 5.0
+      RotateToGoal.lookahead_time: -1.0
 
 
 local_costmap:
